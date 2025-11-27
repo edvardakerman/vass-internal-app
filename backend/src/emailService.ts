@@ -1,44 +1,18 @@
 import { Client } from '@microsoft/microsoft-graph-client';
-import { ClientSecretCredential } from '@azure/identity';
-
-const tenantId = process.env.GRAPH_TENANT_ID || '';
-const clientId = process.env.GRAPH_CLIENT_ID || '';
-const clientSecret = process.env.GRAPH_CLIENT_SECRET || '';
-const senderEmail = process.env.SENDER_EMAIL || '';
-
-let graphClient: Client | null = null;
-
-function getGraphClient(): Client {
-  if (!graphClient) {
-    const credential = new ClientSecretCredential(tenantId, clientId, clientSecret);
-    
-    graphClient = Client.initWithMiddleware({
-      authProvider: {
-        getAccessToken: async () => {
-          const token = await credential.getToken(['https://graph.microsoft.com/.default']);
-          return token.token;
-        },
-      },
-    });
-  }
-  
-  return graphClient;
-}
 
 interface EmailOptions {
-  to: string;
+  accessToken: string;
   subject: string;
   htmlContent: string;
 }
 
-async function sendEmail(options: EmailOptions): Promise<void> {
-  if (!senderEmail || !tenantId || !clientId || !clientSecret) {
-    console.warn('Email configuration not set. Skipping email send.');
-    return;
-  }
-
+async function sendEmailToSelf(options: EmailOptions): Promise<void> {
   try {
-    const client = getGraphClient();
+    const client = Client.init({
+      authProvider: (done) => {
+        done(null, options.accessToken);
+      },
+    });
     
     const message = {
       message: {
@@ -50,15 +24,15 @@ async function sendEmail(options: EmailOptions): Promise<void> {
         toRecipients: [
           {
             emailAddress: {
-              address: options.to,
+              address: 'me', // Sends to the authenticated user
             },
           },
         ],
       },
     };
 
-    await client.api(`/users/${senderEmail}/sendMail`).post(message);
-    console.log(`Email sent successfully to ${options.to}`);
+    await client.api('/me/sendMail').post(message);
+    console.log('Email sent successfully');
   } catch (error) {
     console.error('Error sending email:', error);
     // Don't throw - we don't want email failures to break the main flow
@@ -78,7 +52,7 @@ function formatEventDate(dateTime: string): string {
 }
 
 export async function sendSignUpConfirmation(
-  userEmail: string,
+  accessToken: string,
   eventTitle: string,
   eventDate: string,
   eventLocation: string
@@ -131,15 +105,15 @@ export async function sendSignUpConfirmation(
     </html>
   `;
 
-  await sendEmail({
-    to: userEmail,
+  await sendEmailToSelf({
+    accessToken,
     subject: `Registration Confirmed: ${eventTitle}`,
     htmlContent,
   });
 }
 
 export async function sendWaitlistConfirmation(
-  userEmail: string,
+  accessToken: string,
   eventTitle: string,
   eventDate: string,
   waitlistPosition: number
@@ -194,15 +168,15 @@ export async function sendWaitlistConfirmation(
     </html>
   `;
 
-  await sendEmail({
-    to: userEmail,
+  await sendEmailToSelf({
+    accessToken,
     subject: `Waitlist Confirmation: ${eventTitle}`,
     htmlContent,
   });
 }
 
 export async function sendDropOutConfirmation(
-  userEmail: string,
+  accessToken: string,
   eventTitle: string
 ): Promise<void> {
   const htmlContent = `
@@ -241,15 +215,15 @@ export async function sendDropOutConfirmation(
     </html>
   `;
 
-  await sendEmail({
-    to: userEmail,
+  await sendEmailToSelf({
+    accessToken,
     subject: `Registration Cancelled: ${eventTitle}`,
     htmlContent,
   });
 }
 
 export async function sendPromotionNotification(
-  userEmail: string,
+  accessToken: string,
   eventTitle: string,
   eventDate: string,
   eventLocation: string
@@ -306,8 +280,8 @@ export async function sendPromotionNotification(
     </html>
   `;
 
-  await sendEmail({
-    to: userEmail,
+  await sendEmailToSelf({
+    accessToken,
     subject: `🎉 You Got a Spot: ${eventTitle}`,
     htmlContent,
   });
