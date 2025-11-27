@@ -12,6 +12,7 @@ export interface SharePointEvent {
     BannerUrl?: {
       Url: string;
     };
+    MaxSeats?: number; // Optional for now, can be unlimited
   };
 }
 
@@ -26,4 +27,11 @@ export interface EventRegistration {
   eventTitle: string;
   action: 'signup' | 'dropout';
   timestamp: string;
+}
+
+export interface EventAttendee {
+  userId: string;
+  userEmail: string;
+  userName?: string;
+  signupDate: string;
 }

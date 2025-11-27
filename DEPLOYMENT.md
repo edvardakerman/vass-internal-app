@@ -115,7 +115,7 @@ From the backend directory:
 ```bash
 cd backend
 npm run build
-func azure functionapp publish func-internal-activities
+func azure functionapp publish vass-internal-func
 ```
 
 After deployment, note the **Function App URL** (e.g., `https://func-internal-activities.azurewebsites.net`)

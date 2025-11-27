@@ -4,6 +4,7 @@ import { useMsal } from '@azure/msal-react';
 import type { SharePointEvent } from '../types';
 import { getEvents, signUpForEvent, dropOutFromEvent, getUserRegistrations } from '../api';
 import { USE_MOCK_DATA } from '../authConfig';
+import { AttendeeList } from '../components/AttendeeList';
 import './EventDetailsPage.css';
 
 export const EventDetailsPage = () => {
@@ -203,6 +204,8 @@ export const EventDetailsPage = () => {
             className="description-html"
           />
         </div>
+
+        <AttendeeList eventId={event.id} maxSeats={event.fields.MaxSeats} />
 
         <div className="event-details-actions">
           {isRegistered ? (

@@ -100,3 +100,26 @@ export const getUserRegistrations = async (
   const registrations = await response.json();
   return registrations.map((r: any) => r.eventId);
 };
+
+export const getEventAttendees = async (
+  eventId: string,
+  accessToken: string
+): Promise<Array<{ userId: string; userEmail: string; signupDate: string }>> => {
+  if (USE_MOCK_DATA) {
+    // Return mock attendees from localStorage
+    const stored = localStorage.getItem(`event_attendees_${eventId}`);
+    return stored ? JSON.parse(stored) : [];
+  }
+
+  const response = await fetch(`${API_BASE_URL}/attendees/${eventId}`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch event attendees');
+  }
+
+  return response.json();
+};

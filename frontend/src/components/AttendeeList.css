@@ -1,0 +1,77 @@
+.attendee-list {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  margin-top: 2rem;
+}
+
+.attendee-list h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.25rem;
+  color: #333;
+}
+
+.attendee-items {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.attendee-item {
+  padding: 0.75rem;
+  border-bottom: 1px solid #eee;
+}
+
+.attendee-item:last-child {
+  border-bottom: none;
+}
+
+.attendee-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.attendee-name {
+  font-weight: 500;
+  color: #333;
+}
+
+.attendee-date {
+  font-size: 0.875rem;
+  color: #666;
+}
+
+.empty-state {
+  color: #666;
+  font-style: italic;
+  padding: 1rem;
+  text-align: center;
+  background: #f8f9fa;
+  border-radius: 4px;
+}
+
+.loading {
+  color: #666;
+  padding: 1rem;
+  text-align: center;
+}
+
+.error {
+  color: #dc3545;
+  padding: 1rem;
+  text-align: center;
+  background: #f8d7da;
+  border-radius: 4px;
+}
+
+@media (max-width: 768px) {
+  .attendee-list {
+    padding: 1rem;
+  }
+
+  .attendee-list h3 {
+    font-size: 1.125rem;
+  }
+}
