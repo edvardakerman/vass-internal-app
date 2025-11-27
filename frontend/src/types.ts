@@ -34,4 +34,5 @@ export interface EventAttendee {
   userEmail: string;
   userName?: string;
   signupDate: string;
+  status: 'signup' | 'waitlist';
 }

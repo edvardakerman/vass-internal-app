@@ -28,7 +28,7 @@ export interface EventRegistrationEntity {
   userEmail: string;
   eventId: string;
   eventTitle: string;
-  action: 'signup' | 'dropout';
+  action: 'signup' | 'dropout' | 'waitlist';
   timestamp: string;
 }
 

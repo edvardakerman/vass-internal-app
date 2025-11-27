@@ -12,6 +12,13 @@
   color: #333;
 }
 
+.waitlist-header {
+  margin-top: 2rem !important;
+  padding-top: 1.5rem;
+  border-top: 2px solid #eee;
+  color: #666 !important;
+}
+
 .attendee-items {
   list-style: none;
   padding: 0;
@@ -25,6 +32,11 @@
 
 .attendee-item:last-child {
   border-bottom: none;
+}
+
+.waitlist-item {
+  background: #f8f9fa;
+  border-left: 3px solid #ffc107;
 }
 
 .attendee-info {

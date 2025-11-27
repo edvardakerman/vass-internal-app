@@ -1,6 +1,7 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
-import { addRegistration } from '../tableStorage';
+import { addRegistration, getEventAttendeesWithWaitlist } from '../tableStorage';
 import type { SignUpRequest } from '../types';
+import { mockEvents } from '../mockData';
 
 export async function signUp(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
   context.log('HTTP trigger function processed a request for signUp');
@@ -16,11 +17,27 @@ export async function signUp(request: HttpRequest, context: InvocationContext): 
       };
     }
 
-    await addRegistration(eventId, userId, userEmail, eventTitle, 'signup');
+    // Find event to check capacity
+    const event = mockEvents.value.find(e => e.id === eventId);
+    const maxSeats = event?.fields?.MaxSeats;
+
+    let action: 'signup' | 'waitlist' = 'signup';
+    let message = 'Successfully signed up for event';
+
+    // Check if event is full
+    if (maxSeats) {
+      const { attendees } = await getEventAttendeesWithWaitlist(eventId);
+      if (attendees.length >= maxSeats) {
+        action = 'waitlist';
+        message = 'Event is full. Added to waitlist';
+      }
+    }
+
+    await addRegistration(eventId, userId, userEmail, eventTitle, action);
 
     return {
       status: 200,
-      jsonBody: { message: 'Successfully signed up for event' },
+      jsonBody: { message, status: action },
     };
   } catch (error) {
     context.error('Error signing up for event:', error);

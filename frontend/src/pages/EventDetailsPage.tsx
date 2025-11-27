@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useMsal } from '@azure/msal-react';
 import type { SharePointEvent } from '../types';
-import { getEvents, signUpForEvent, dropOutFromEvent, getUserRegistrations } from '../api';
+import { getEvents, signUpForEvent, dropOutFromEvent, getEventAttendees } from '../api';
 import { USE_MOCK_DATA } from '../authConfig';
 import { AttendeeList } from '../components/AttendeeList';
 import './EventDetailsPage.css';
@@ -12,7 +12,7 @@ export const EventDetailsPage = () => {
   const navigate = useNavigate();
   const { accounts, instance } = useMsal();
   const [event, setEvent] = useState<SharePointEvent | null>(null);
-  const [isRegistered, setIsRegistered] = useState(false);
+  const [userStatus, setUserStatus] = useState<'none' | 'signup' | 'waitlist'>('none');
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -27,17 +27,24 @@ export const EventDetailsPage = () => {
     try {
       setLoading(true);
       const accessToken = await getAccessToken();
-      const [events, registrations] = await Promise.all([
-        getEvents(accessToken),
-        USE_MOCK_DATA 
-          ? loadMockRegistrations()
-          : getUserRegistrations(userId, accessToken),
-      ]);
+      const events = await getEvents(accessToken);
 
       const foundEvent = events.find(e => e.id === id);
       if (foundEvent) {
         setEvent(foundEvent);
-        setIsRegistered(registrations.includes(foundEvent.id));
+        
+        // Check user's registration status from attendees
+        const { attendees, waitlist } = await getEventAttendees(foundEvent.id, accessToken);
+        const isAttendee = attendees.find(a => a.userId === userId);
+        const isOnWaitlist = waitlist.find(w => w.userId === userId);
+        
+        if (isAttendee) {
+          setUserStatus('signup');
+        } else if (isOnWaitlist) {
+          setUserStatus('waitlist');
+        } else {
+          setUserStatus('none');
+        }
       } else {
         navigate('/');
       }
@@ -61,29 +68,26 @@ export const EventDetailsPage = () => {
     return response.accessToken;
   };
 
-  const loadMockRegistrations = (): string[] => {
-    const stored = localStorage.getItem(`registrations_${userId}`);
-    return stored ? JSON.parse(stored) : [];
-  };
-
-  const saveMockRegistrations = (eventIds: string[]) => {
-    localStorage.setItem(`registrations_${userId}`, JSON.stringify(eventIds));
-  };
-
   const handleSignUp = async () => {
     if (!event) return;
     
     try {
       setActionLoading(true);
       const accessToken = await getAccessToken();
-      await signUpForEvent(event.id, userId, userEmail, event.fields.Title, accessToken);
+      const response = await signUpForEvent(event.id, userId, userEmail, event.fields.Title, accessToken);
 
-      setIsRegistered(true);
-
-      if (USE_MOCK_DATA) {
-        const registrations = loadMockRegistrations();
-        saveMockRegistrations([...registrations, event.id]);
+      // Check if user was added to signup or waitlist
+      if (response.status) {
+        setUserStatus(response.status);
+        if (response.status === 'waitlist') {
+          alert('Event is full. You have been added to the waitlist.');
+        }
+      } else {
+        setUserStatus('signup');
       }
+
+      // Reload to get updated attendee list
+      await loadEventData();
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to sign up');
       console.error('Error signing up:', err);
@@ -98,14 +102,17 @@ export const EventDetailsPage = () => {
     try {
       setActionLoading(true);
       const accessToken = await getAccessToken();
-      await dropOutFromEvent(event.id, userId, accessToken);
+      const response = await dropOutFromEvent(event.id, userId, accessToken);
 
-      setIsRegistered(false);
+      setUserStatus('none');
 
-      if (USE_MOCK_DATA) {
-        const registrations = loadMockRegistrations();
-        saveMockRegistrations(registrations.filter(id => id !== event.id));
+      // Show message if someone was promoted from waitlist
+      if (response.promoted) {
+        console.log('Promoted from waitlist:', response.promoted);
       }
+
+      // Reload to get updated attendee list
+      await loadEventData();
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to drop out');
       console.error('Error dropping out:', err);
@@ -208,7 +215,7 @@ export const EventDetailsPage = () => {
         <AttendeeList eventId={event.id} maxSeats={event.fields.MaxSeats} />
 
         <div className="event-details-actions">
-          {isRegistered ? (
+          {userStatus === 'signup' ? (
             <>
               <div className="registration-status">
                 ✓ You are registered for this event
@@ -219,6 +226,19 @@ export const EventDetailsPage = () => {
                 disabled={actionLoading}
               >
                 {actionLoading ? 'Processing...' : 'Drop Out'}
+              </button>
+            </>
+          ) : userStatus === 'waitlist' ? (
+            <>
+              <div className="registration-status waitlist-status">
+                ⏳ You are on the waitlist for this event
+              </div>
+              <button 
+                onClick={handleDropOut} 
+                className="action-button button-secondary"
+                disabled={actionLoading}
+              >
+                {actionLoading ? 'Processing...' : 'Leave Waitlist'}
               </button>
             </>
           ) : (

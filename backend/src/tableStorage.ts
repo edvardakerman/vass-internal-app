@@ -31,7 +31,7 @@ export const addRegistration = async (
   userId: string,
   userEmail: string,
   eventTitle: string,
-  action: 'signup' | 'dropout'
+  action: 'signup' | 'dropout' | 'waitlist'
 ): Promise<void> => {
   const client = getTableClient();
   const timestamp = new Date().toISOString();
@@ -73,8 +73,8 @@ export const getUserRegistrations = async (userId: string): Promise<EventRegistr
     }
   });
 
-  // Filter only active signups (where latest action is 'signup')
-  return Array.from(latestByEvent.values()).filter(e => e.action === 'signup');
+  // Filter only active signups (where latest action is 'signup' or 'waitlist')
+  return Array.from(latestByEvent.values()).filter(e => e.action === 'signup' || e.action === 'waitlist');
 };
 
 export const getEventRegistrations = async (eventId: string): Promise<EventRegistrationEntity[]> => {
@@ -99,6 +99,45 @@ export const getEventRegistrations = async (eventId: string): Promise<EventRegis
     }
   });
 
-  // Filter only active signups
-  return Array.from(latestByUser.values()).filter(e => e.action === 'signup');
+  // Filter active signups and waitlist
+  return Array.from(latestByUser.values()).filter(e => e.action === 'signup' || e.action === 'waitlist');
+};
+
+export const getEventAttendeesWithWaitlist = async (eventId: string): Promise<{
+  attendees: EventRegistrationEntity[];
+  waitlist: EventRegistrationEntity[];
+}> => {
+  const allRegistrations = await getEventRegistrations(eventId);
+  
+  const attendees = allRegistrations
+    .filter(e => e.action === 'signup')
+    .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+  
+  const waitlist = allRegistrations
+    .filter(e => e.action === 'waitlist')
+    .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+  
+  return { attendees, waitlist };
+};
+
+export const promoteFromWaitlist = async (eventId: string, eventTitle: string): Promise<EventRegistrationEntity | null> => {
+  const { waitlist } = await getEventAttendeesWithWaitlist(eventId);
+  
+  if (waitlist.length === 0) {
+    return null;
+  }
+  
+  // Get first person in waitlist
+  const nextPerson = waitlist[0];
+  
+  // Promote them to signup
+  await addRegistration(
+    eventId,
+    nextPerson.userId,
+    nextPerson.userEmail,
+    eventTitle,
+    'signup'
+  );
+  
+  return nextPerson;
 };

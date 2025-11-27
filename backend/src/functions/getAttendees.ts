@@ -1,5 +1,5 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
-import { getEventRegistrations } from '../tableStorage';
+import { getEventAttendeesWithWaitlist } from '../tableStorage';
 
 export async function getAttendees(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
   context.log('HTTP trigger function processed a request for getAttendees');
@@ -14,19 +14,32 @@ export async function getAttendees(request: HttpRequest, context: InvocationCont
       };
     }
 
-    const registrations = await getEventRegistrations(eventId);
+    const { attendees, waitlist } = await getEventAttendeesWithWaitlist(eventId);
 
-    // Map to attendee format
-    const attendees = registrations.map(reg => ({
+    // Map attendees to attendee format
+    const attendeeList = attendees.map(reg => ({
       userId: reg.userId,
       userEmail: reg.userEmail,
-      userName: reg.userEmail.split('@')[0], // Extract name from email
+      userName: reg.userEmail.split('@')[0],
       signupDate: reg.timestamp,
+      status: 'signup' as const,
+    }));
+
+    // Map waitlist
+    const waitlistList = waitlist.map(reg => ({
+      userId: reg.userId,
+      userEmail: reg.userEmail,
+      userName: reg.userEmail.split('@')[0],
+      signupDate: reg.timestamp,
+      status: 'waitlist' as const,
     }));
 
     return {
       status: 200,
-      jsonBody: attendees,
+      jsonBody: {
+        attendees: attendeeList,
+        waitlist: waitlistList,
+      },
       headers: {
         'Content-Type': 'application/json',
       },

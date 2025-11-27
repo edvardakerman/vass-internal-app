@@ -13,6 +13,7 @@ interface AttendeeListProps {
 export function AttendeeList({ eventId, maxSeats }: AttendeeListProps) {
   const { instance, accounts } = useMsal();
   const [attendees, setAttendees] = useState<EventAttendee[]>([]);
+  const [waitlist, setWaitlist] = useState<EventAttendee[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,7 +33,8 @@ export function AttendeeList({ eventId, maxSeats }: AttendeeListProps) {
 
       const response = await instance.acquireTokenSilent(request);
       const data = await getEventAttendees(eventId, response.accessToken);
-      setAttendees(data);
+      setAttendees(data.attendees);
+      setWaitlist(data.waitlist);
     } catch (err) {
       setError('Failed to load attendees');
       console.error('Error loading attendees:', err);
@@ -82,6 +84,26 @@ export function AttendeeList({ eventId, maxSeats }: AttendeeListProps) {
             </li>
           ))}
         </ul>
+      )}
+
+      {waitlist.length > 0 && (
+        <>
+          <h3 className="waitlist-header">Waitlist ({waitlist.length})</h3>
+          <ul className="attendee-items waitlist-items">
+            {waitlist.map((person, index) => (
+              <li key={person.userId} className="attendee-item waitlist-item">
+                <div className="attendee-info">
+                  <span className="attendee-name">
+                    #{index + 1} - {person.userName || person.userEmail}
+                  </span>
+                  <span className="attendee-date">
+                    Joined waitlist on {new Date(person.signupDate).toLocaleDateString()}
+                  </span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
     </div>
   );
