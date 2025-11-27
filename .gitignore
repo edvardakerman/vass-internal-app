@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Testing
+coverage/
+
+# Production
+dist/
+build/
+
+# Environment variables
+.env
+.env.local
+.env.production
+
+# Local storage emulation
+azurite/
+
+# Logs
+*.log
+npm-debug.log*
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+# Azure Functions
+backend/bin/
+backend/obj/
+backend/.azurefunctions/
+backend/local.settings.json
+
+# Build outputs
+*.js
+*.js.map
+!backend/src/**/*.js
