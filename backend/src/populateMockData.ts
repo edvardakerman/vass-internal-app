@@ -1,8 +1,8 @@
 import { TableClient } from '@azure/data-tables';
 import * as dotenv from 'dotenv';
 
-// Load environment variables
-dotenv.config();
+// Load environment variables from .env.local
+dotenv.config({ path: '.env.local' });
 
 const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING || '';
 const tableName = process.env.TABLE_NAME || 'EventRegistrations';

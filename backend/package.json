@@ -21,6 +21,7 @@
   "dependencies": {
     "@azure/data-tables": "^13.3.2",
     "@azure/identity": "^4.13.0",
+    "@microsoft/microsoft-graph-client": "^3.0.7",
     "dotenv": "^17.2.3"
   }
 }
