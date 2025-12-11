@@ -1,14 +1,18 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { SharePointEvent } from '../types';
 
 interface EventCardProps {
   event: SharePointEvent;
   isRegistered: boolean;
-  onSignUp: () => void;
+  onSignUp: (priority?: number) => void;
   onDropOut: () => void;
+  categoryEventCount: number;
 }
 
-export const EventCard = ({ event, isRegistered, onSignUp, onDropOut }: EventCardProps) => {
+export const EventCard = ({ event, isRegistered, onSignUp, onDropOut, categoryEventCount }: EventCardProps) => {
+  const [selectedPriority, setSelectedPriority] = useState<number | ''>('');
+
   const formatDate = (dateTime: string) => {
     const date = new Date(dateTime);
     return date.toLocaleString('en-US', {
@@ -39,6 +43,14 @@ export const EventCard = ({ event, isRegistered, onSignUp, onDropOut }: EventCar
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
     e.currentTarget.src = getFallbackImage(event.fields.Category);
+  };
+
+  const handleSignUp = () => {
+    if (selectedPriority === '') {
+      alert('Please select a priority before signing up');
+      return;
+    }
+    onSignUp(selectedPriority as number);
   };
 
   const bannerUrl = event.fields.BannerUrl?.Url || getFallbackImage(event.fields.Category);
@@ -74,13 +86,36 @@ export const EventCard = ({ event, isRegistered, onSignUp, onDropOut }: EventCar
           <span>{event.fields.Location}</span>
         </div>
       </div>
+      
+      {!isRegistered && (
+        <div className="priority-section">
+          <label className="priority-label">Priority</label>
+          <select 
+            value={selectedPriority} 
+            onChange={(e) => setSelectedPriority(e.target.value === '' ? '' : parseInt(e.target.value))}
+            className="priority-dropdown"
+          >
+            <option value="">Select priority...</option>
+            {Array.from({ length: categoryEventCount }, (_, i) => i + 1).map(num => (
+              <option key={num} value={num}>
+                Priority {num}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       <div className="event-actions">
         {isRegistered ? (
           <button onClick={onDropOut} className="button button-secondary">
             Drop Out
           </button>
         ) : (
-          <button onClick={onSignUp} className="button button-primary">
+          <button 
+            onClick={handleSignUp} 
+            className="button button-primary"
+            disabled={selectedPriority === ''}
+          >
             Sign Up
           </button>
         )}

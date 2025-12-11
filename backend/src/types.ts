@@ -30,6 +30,18 @@ export interface EventRegistrationEntity {
   eventTitle: string;
   action: 'signup' | 'dropout' | 'waitlist';
   timestamp: string;
+  priority?: number; // Priority within category (1-n)
+}
+
+export interface UserPriorityEntity {
+  partitionKey: string; // userId
+  rowKey: string; // `${category}_${eventId}`
+  userId: string;
+  category: string; // 'Health' or 'Social'
+  eventId: string;
+  eventTitle: string;
+  priority: number; // Priority within category
+  timestamp: string;
 }
 
 export interface SignUpRequest {

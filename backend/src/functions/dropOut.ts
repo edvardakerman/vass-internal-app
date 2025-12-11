@@ -2,7 +2,6 @@ import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/fu
 import { addRegistration, promoteFromWaitlist, getEventAttendeesWithWaitlist } from '../tableStorage';
 import type { DropOutRequest } from '../types';
 import { mockEvents } from '../mockData';
-import { sendDropOutConfirmation, sendPromotionNotification } from '../emailService';
 
 export async function dropOut(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
   context.log('HTTP trigger function processed a request for dropOut');
@@ -34,28 +33,13 @@ export async function dropOut(request: HttpRequest, context: InvocationContext):
     // Add a dropout record
     await addRegistration(eventId, userId, '', '', 'dropout');
 
-    // Send dropout confirmation email
     const event = mockEvents.value.find(e => e.id === eventId);
-    if (event && userRegistration.userEmail) {
-      await sendDropOutConfirmation(userRegistration.userEmail, event.fields.Title);
-    }
-
     let promotedUser = null;
 
     // If user was an attendee (not waitlist), try to promote someone from waitlist
     if (wasAttendee) {
       const eventTitle = event?.fields?.Title || '';
       promotedUser = await promoteFromWaitlist(eventId, eventTitle);
-      
-      // Send promotion email to the promoted user
-      if (promotedUser && event) {
-        await sendPromotionNotification(
-          promotedUser.userEmail,
-          event.fields.Title,
-          event.fields.EventDate,
-          event.fields.Location
-        );
-      }
     }
 
     return {

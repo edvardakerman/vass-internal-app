@@ -2,7 +2,6 @@ import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/fu
 import { addRegistration, getEventAttendeesWithWaitlist } from '../tableStorage';
 import type { SignUpRequest } from '../types';
 import { mockEvents } from '../mockData';
-import { sendSignUpConfirmation, sendWaitlistConfirmation } from '../emailService';
 
 export async function signUp(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
   context.log('HTTP trigger function processed a request for signUp');
@@ -31,26 +30,6 @@ export async function signUp(request: HttpRequest, context: InvocationContext): 
       if (attendees.length >= maxSeats) {
         action = 'waitlist';
         message = 'Event is full. Added to waitlist';
-        
-        // Send waitlist confirmation email
-        if (event) {
-          await sendWaitlistConfirmation(
-            userEmail,
-            event.fields.Title,
-            event.fields.EventDate,
-            waitlist.length + 1 // Position in waitlist
-          );
-        }
-      } else {
-        // Send signup confirmation email
-        if (event) {
-          await sendSignUpConfirmation(
-            userEmail,
-            event.fields.Title,
-            event.fields.EventDate,
-            event.fields.Location
-          );
-        }
       }
     }
 

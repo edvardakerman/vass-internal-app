@@ -63,13 +63,27 @@ export const EventList = () => {
     localStorage.setItem(`registrations_${userId}`, JSON.stringify(eventIds));
   };
 
-  const handleSignUp = async (event: SharePointEvent) => {
+  const handleSignUp = async (event: SharePointEvent, priority?: number) => {
     try {
       const accessToken = await getAccessToken();
       await signUpForEvent(event.id, userId, userEmail, event.fields.Title, accessToken);
 
       const updatedRegistrations = [...registeredEvents, event.id];
       setRegisteredEvents(updatedRegistrations);
+
+      // Store priority if provided
+      if (priority) {
+        const category = event.fields.Category.toLowerCase().includes('health') ? 'Health' : 'Social';
+        const priorities = localStorage.getItem(`priorities_${userId}`);
+        const existingPriorities = priorities ? JSON.parse(priorities) : { health: [], social: [] };
+        
+        const categoryKey = category.toLowerCase();
+        existingPriorities[categoryKey] = existingPriorities[categoryKey] || [];
+        existingPriorities[categoryKey] = existingPriorities[categoryKey].filter((p: any) => p.eventId !== event.id);
+        existingPriorities[categoryKey].push({ eventId: event.id, eventTitle: event.fields.Title, priority });
+        
+        localStorage.setItem(`priorities_${userId}`, JSON.stringify(existingPriorities));
+      }
 
       if (USE_MOCK_DATA) {
         saveMockRegistrations(updatedRegistrations);
@@ -97,6 +111,13 @@ export const EventList = () => {
     }
   };
 
+  const getCategoryEvents = (category: string) => {
+    return events.filter(e => e.fields.Category.toLowerCase().includes(category.toLowerCase()));
+  };
+
+  const healthEvents = getCategoryEvents('health');
+  const socialEvents = getCategoryEvents('social');
+
   if (loading) {
     return <div className="loading">Loading events...</div>;
   }
@@ -113,20 +134,49 @@ export const EventList = () => {
           <span className="mock-badge">Using Mock Data</span>
         )}
       </div>
+
       {events.length === 0 ? (
         <p>No events available.</p>
       ) : (
-        <div className="events-grid">
-          {events.map((event) => (
-            <EventCard
-              key={event.id}
-              event={event}
-              isRegistered={registeredEvents.includes(event.id)}
-              onSignUp={() => handleSignUp(event)}
-              onDropOut={() => handleDropOut(event.id)}
-            />
-          ))}
-        </div>
+        <>
+          {/* Health Events */}
+          {healthEvents.length > 0 && (
+            <div className="category-events">
+              <h3>Health Events</h3>
+              <div className="events-grid">
+                {healthEvents.map((event) => (
+                  <EventCard
+                    key={event.id}
+                    event={event}
+                    isRegistered={registeredEvents.includes(event.id)}
+                    onSignUp={(priority) => handleSignUp(event, priority)}
+                    onDropOut={() => handleDropOut(event.id)}
+                    categoryEventCount={healthEvents.length}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Social Events */}
+          {socialEvents.length > 0 && (
+            <div className="category-events">
+              <h3>Social Events</h3>
+              <div className="events-grid">
+                {socialEvents.map((event) => (
+                  <EventCard
+                    key={event.id}
+                    event={event}
+                    isRegistered={registeredEvents.includes(event.id)}
+                    onSignUp={(priority) => handleSignUp(event, priority)}
+                    onDropOut={() => handleDropOut(event.id)}
+                    categoryEventCount={socialEvents.length}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

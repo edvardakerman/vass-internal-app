@@ -27,6 +27,16 @@ export interface EventRegistration {
   eventTitle: string;
   action: 'signup' | 'dropout';
   timestamp: string;
+  priority?: number;
+}
+
+export interface UserPriority {
+  userId: string;
+  category: 'Health' | 'Social';
+  eventId: string;
+  eventTitle: string;
+  priority: number;
+  timestamp: string;
 }
 
 export interface EventAttendee {
