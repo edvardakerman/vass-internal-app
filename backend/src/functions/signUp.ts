@@ -10,7 +10,7 @@ export async function signUp(request: HttpRequest, context: InvocationContext): 
     const body = await request.json() as SignUpRequestWithPriority;
     const { eventId, userId, userEmail, eventTitle, priority } = body;
 
-    if (!eventId || !userId || !userEmail || !eventTitle) {
+    if (!eventId || !userId || !userEmail || !eventTitle || !priority) {
       return {
         status: 400,
         jsonBody: { error: 'Missing required fields' },

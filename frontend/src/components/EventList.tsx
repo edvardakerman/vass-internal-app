@@ -4,6 +4,7 @@ import type { SharePointEvent } from '../types';
 import { getEvents, signUpForEvent, dropOutFromEvent, getUserRegistrations } from '../api';
 import { USE_MOCK_DATA } from '../authConfig';
 import { EventCard } from './EventCard';
+import { RegistrationSummary } from './RegistrationSummary';
 
 export const EventList = () => {
   const { accounts, instance } = useMsal();
@@ -140,6 +141,8 @@ export const EventList = () => {
 
   return (
     <div className="event-list">
+      <RegistrationSummary registrations={registeredEvents} events={events} />
+      
       <div className="event-list-header">
         <h2>Available Events</h2>
         {USE_MOCK_DATA && (

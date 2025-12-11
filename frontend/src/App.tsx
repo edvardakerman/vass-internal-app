@@ -12,7 +12,10 @@ function AppContent() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1>Internal Activities</h1>
+        <div className="header-logo-section">
+          <img src="/images/LOGO_VASS_RGB.png" alt="VASS Logo" className="vass-logo" />
+          <h1>Internal Activities</h1>
+        </div>
         <AuthenticatedTemplate>
           <div className="user-info">
             <span>Welcome, {accounts[0]?.name || accounts[0]?.username}</span>
