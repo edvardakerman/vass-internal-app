@@ -8,10 +8,12 @@ interface EventCardProps {
   onSignUp: (priority?: number) => void;
   onDropOut: () => void;
   categoryEventCount: number;
+  selectedPriority?: number | null;
+  usedPriorities?: number[];
 }
 
-export const EventCard = ({ event, isRegistered, onSignUp, onDropOut, categoryEventCount }: EventCardProps) => {
-  const [selectedPriority, setSelectedPriority] = useState<number | ''>('');
+export const EventCard = ({ event, isRegistered, onSignUp, onDropOut, categoryEventCount, selectedPriority: selectedPriorityProp = null, usedPriorities = [] }: EventCardProps) => {
+  const [selectedPriority, setSelectedPriority] = useState<number | ''>(selectedPriorityProp ?? '');
 
   const formatDate = (dateTime: string) => {
     const date = new Date(dateTime);
@@ -66,7 +68,14 @@ export const EventCard = ({ event, isRegistered, onSignUp, onDropOut, categoryEv
       </div>
       <div className="event-header">
         <h3>{event.fields.Title}</h3>
-        {isRegistered && <span className="registered-badge">✓ Registered</span>}
+        {isRegistered && (
+          <>
+            <span className="registered-badge">✓ Registered</span>
+            {selectedPriorityProp != null && (
+              <span className="priority-badge">Priority {selectedPriorityProp}</span>
+            )}
+          </>
+        )}
       </div>
       <div className="event-category">
         <span className="category-badge">{event.fields.Category}</span>
@@ -97,7 +106,7 @@ export const EventCard = ({ event, isRegistered, onSignUp, onDropOut, categoryEv
           >
             <option value="">Select priority...</option>
             {Array.from({ length: categoryEventCount }, (_, i) => i + 1).map(num => (
-              <option key={num} value={num}>
+              <option key={num} value={num} disabled={usedPriorities?.includes(num) && num !== selectedPriority}>
                 Priority {num}
               </option>
             ))}

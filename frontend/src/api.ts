@@ -28,12 +28,19 @@ export const signUpForEvent = async (
   userId: string,
   userEmail: string,
   eventTitle: string,
-  accessToken: string
+  accessToken: string,
+  priority?: number
 ): Promise<{ message: string; status?: 'signup' | 'waitlist' }> => {
   if (USE_MOCK_DATA) {
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 300));
-    console.log('Mock signup:', { eventId, userId, userEmail, eventTitle });
+    // Save mock registration including priority
+    const key = `user_registrations_${userId}`;
+    const stored = localStorage.getItem(key);
+    const regs = stored ? JSON.parse(stored) : [];
+    regs.push({ eventId, eventTitle, priority, action: 'signup', timestamp: new Date().toISOString() });
+    localStorage.setItem(key, JSON.stringify(regs));
+    console.log('Mock signup:', { eventId, userId, userEmail, eventTitle, priority });
     return { message: 'Successfully signed up', status: 'signup' };
   }
 
@@ -43,11 +50,12 @@ export const signUpForEvent = async (
       'Content-Type': 'application/json',
       Authorization: `Bearer ${accessToken}`,
     },
-    body: JSON.stringify({ eventId, userId, userEmail, eventTitle }),
+    body: JSON.stringify({ eventId, userId, userEmail, eventTitle, priority }),
   });
 
   if (!response.ok) {
-    throw new Error('Failed to sign up for event');
+    const text = await response.text();
+    throw new Error(text || 'Failed to sign up for event');
   }
 
   return response.json();
@@ -61,6 +69,12 @@ export const dropOutFromEvent = async (
   if (USE_MOCK_DATA) {
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 300));
+    // remove mock registration for this user/event
+    const key = `user_registrations_${userId}`;
+    const stored = localStorage.getItem(key);
+    const regs = stored ? JSON.parse(stored) : [];
+    const remaining = regs.filter((r: any) => r.eventId !== eventId);
+    localStorage.setItem(key, JSON.stringify(remaining));
     console.log('Mock dropout:', { eventId, userId });
     return { message: 'Successfully dropped out', promoted: null };
   }
@@ -84,10 +98,9 @@ export const dropOutFromEvent = async (
 export const getUserRegistrations = async (
   userId: string,
   accessToken: string
-): Promise<string[]> => {
+): Promise<any[]> => {
   if (USE_MOCK_DATA) {
-    // Return mock registered event IDs from localStorage
-    const stored = localStorage.getItem(`registrations_${userId}`);
+    const stored = localStorage.getItem(`user_registrations_${userId}`);
     return stored ? JSON.parse(stored) : [];
   }
 
@@ -101,8 +114,7 @@ export const getUserRegistrations = async (
     throw new Error('Failed to fetch user registrations');
   }
 
-  const registrations = await response.json();
-  return registrations.map((r: any) => r.eventId);
+  return response.json();
 };
 
 export const getEventAttendees = async (

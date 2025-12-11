@@ -31,7 +31,7 @@ export async function dropOut(request: HttpRequest, context: InvocationContext):
     const wasAttendee = userRegistration.action === 'signup';
 
     // Add a dropout record
-    await addRegistration(eventId, userId, '', '', 'dropout');
+    await addRegistration(eventId, userId, '', '', 'dropout', undefined);
 
     const event = mockEvents.value.find(e => e.id === eventId);
     let promotedUser = null;

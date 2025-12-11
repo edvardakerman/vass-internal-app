@@ -51,6 +51,10 @@ export interface SignUpRequest {
   eventTitle: string;
 }
 
+export interface SignUpRequestWithPriority extends SignUpRequest {
+  priority?: number;
+}
+
 export interface DropOutRequest {
   eventId: string;
   userId: string;

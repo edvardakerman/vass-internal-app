@@ -31,7 +31,8 @@ export const addRegistration = async (
   userId: string,
   userEmail: string,
   eventTitle: string,
-  action: 'signup' | 'dropout' | 'waitlist'
+  action: 'signup' | 'dropout' | 'waitlist',
+  priority?: number
 ): Promise<void> => {
   const client = getTableClient();
   const timestamp = new Date().toISOString();
@@ -46,6 +47,7 @@ export const addRegistration = async (
     eventTitle,
     action,
     timestamp,
+    priority,
   };
 
   await client.createEntity(entity);
@@ -136,7 +138,9 @@ export const promoteFromWaitlist = async (eventId: string, eventTitle: string): 
     nextPerson.userId,
     nextPerson.userEmail,
     eventTitle,
-    'signup'
+    'signup',
+    // preserve their priority if present
+    (nextPerson as any).priority
   );
   
   return nextPerson;

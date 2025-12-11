@@ -8,7 +8,7 @@ import { EventCard } from './EventCard';
 export const EventList = () => {
   const { accounts, instance } = useMsal();
   const [events, setEvents] = useState<SharePointEvent[]>([]);
-  const [registeredEvents, setRegisteredEvents] = useState<string[]>([]);
+  const [registeredEvents, setRegisteredEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -54,21 +54,22 @@ export const EventList = () => {
     return response.accessToken;
   };
 
-  const loadMockRegistrations = (): string[] => {
-    const stored = localStorage.getItem(`registrations_${userId}`);
+  const loadMockRegistrations = (): any[] => {
+    const stored = localStorage.getItem(`user_registrations_${userId}`);
     return stored ? JSON.parse(stored) : [];
   };
 
-  const saveMockRegistrations = (eventIds: string[]) => {
-    localStorage.setItem(`registrations_${userId}`, JSON.stringify(eventIds));
+  const saveMockRegistrations = (regs: any[]) => {
+    localStorage.setItem(`user_registrations_${userId}`, JSON.stringify(regs));
   };
 
   const handleSignUp = async (event: SharePointEvent, priority?: number) => {
     try {
       const accessToken = await getAccessToken();
-      await signUpForEvent(event.id, userId, userEmail, event.fields.Title, accessToken);
+      await signUpForEvent(event.id, userId, userEmail, event.fields.Title, accessToken, priority);
 
-      const updatedRegistrations = [...registeredEvents, event.id];
+      const newReg = { eventId: event.id, eventTitle: event.fields.Title, priority, action: 'signup', timestamp: new Date().toISOString() };
+      const updatedRegistrations = [...registeredEvents.filter(r => r.eventId !== event.id), newReg];
       setRegisteredEvents(updatedRegistrations);
 
       // Store priority if provided
@@ -99,7 +100,7 @@ export const EventList = () => {
       const accessToken = await getAccessToken();
       await dropOutFromEvent(eventId, userId, accessToken);
 
-      const updatedRegistrations = registeredEvents.filter(id => id !== eventId);
+      const updatedRegistrations = registeredEvents.filter(r => r.eventId !== eventId);
       setRegisteredEvents(updatedRegistrations);
 
       if (USE_MOCK_DATA) {
@@ -117,6 +118,17 @@ export const EventList = () => {
 
   const healthEvents = getCategoryEvents('health');
   const socialEvents = getCategoryEvents('social');
+
+  // Compute used priorities per category from registeredEvents
+  const usedPrioritiesByCategory: { [k: string]: number[] } = { health: [], social: [] };
+  registeredEvents.forEach(r => {
+    const ev = events.find(e => e.id === r.eventId);
+    const cat = ev?.fields?.Category?.toLowerCase()?.includes('health') ? 'health' : 'social';
+    if (r.priority !== undefined && r.priority !== null) {
+      usedPrioritiesByCategory[cat] = usedPrioritiesByCategory[cat] || [];
+      usedPrioritiesByCategory[cat].push(r.priority);
+    }
+  });
 
   if (loading) {
     return <div className="loading">Loading events...</div>;
@@ -144,16 +156,25 @@ export const EventList = () => {
             <div className="category-events">
               <h3>Health Events</h3>
               <div className="events-grid">
-                {healthEvents.map((event) => (
-                  <EventCard
-                    key={event.id}
-                    event={event}
-                    isRegistered={registeredEvents.includes(event.id)}
-                    onSignUp={(priority) => handleSignUp(event, priority)}
-                    onDropOut={() => handleDropOut(event.id)}
-                    categoryEventCount={healthEvents.length}
-                  />
-                ))}
+                {healthEvents.map((event) => {
+                  const reg = registeredEvents.find(r => r.eventId === event.id);
+                  const isReg = !!reg && (reg.action === 'signup' || reg.action === 'waitlist');
+                  const selectedPriority = reg?.priority ?? null;
+                  const used = (usedPrioritiesByCategory['health'] || []).filter((p: number) => p !== selectedPriority);
+
+                  return (
+                    <EventCard
+                      key={event.id}
+                      event={event}
+                      isRegistered={isReg}
+                      onSignUp={(priority) => handleSignUp(event, priority)}
+                      onDropOut={() => handleDropOut(event.id)}
+                      categoryEventCount={healthEvents.length}
+                      selectedPriority={selectedPriority}
+                      usedPriorities={used}
+                    />
+                  );
+                })}
               </div>
             </div>
           )}
@@ -163,16 +184,25 @@ export const EventList = () => {
             <div className="category-events">
               <h3>Social Events</h3>
               <div className="events-grid">
-                {socialEvents.map((event) => (
-                  <EventCard
-                    key={event.id}
-                    event={event}
-                    isRegistered={registeredEvents.includes(event.id)}
-                    onSignUp={(priority) => handleSignUp(event, priority)}
-                    onDropOut={() => handleDropOut(event.id)}
-                    categoryEventCount={socialEvents.length}
-                  />
-                ))}
+                {socialEvents.map((event) => {
+                  const reg = registeredEvents.find(r => r.eventId === event.id);
+                  const isReg = !!reg && (reg.action === 'signup' || reg.action === 'waitlist');
+                  const selectedPriority = reg?.priority ?? null;
+                  const used = (usedPrioritiesByCategory['social'] || []).filter((p: number) => p !== selectedPriority);
+
+                  return (
+                    <EventCard
+                      key={event.id}
+                      event={event}
+                      isRegistered={isReg}
+                      onSignUp={(priority) => handleSignUp(event, priority)}
+                      onDropOut={() => handleDropOut(event.id)}
+                      categoryEventCount={socialEvents.length}
+                      selectedPriority={selectedPriority}
+                      usedPriorities={used}
+                    />
+                  );
+                })}
               </div>
             </div>
           )}
